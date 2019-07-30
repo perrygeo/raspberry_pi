@@ -1,0 +1,20 @@
+- name: Provision software for Raspberry Pi
+  hosts: pi
+  become: true
+  tasks:
+
+  - name: Install official packages
+    apt:
+      name: "{{ packages }}"
+      state: present
+      update_cache: yes
+      cache_valid_time: 3600
+    vars:
+      packages:
+      - htop
+      - aptitude
+      - postgresql-11
+
+   # TODO timescaledb
+   # TODO initialize database
+   # TODO install and enable the photoresistor service
