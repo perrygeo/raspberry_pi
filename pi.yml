@@ -11,10 +11,53 @@
       cache_valid_time: 3600
     vars:
       packages:
-      - htop
+      - acl
       - aptitude
+      - build-essential
+      - cmake
+      - git
+      - htop
+      - libssl-dev
       - postgresql-11
+      - postgresql-11-postgis-2.5
+      - postgresql-server-dev-11
 
-   # TODO timescaledb
-   # TODO initialize database
+  - name: Download TimescaleDB
+    become_user: pi
+    register: timescale_repo
+    git:
+      repo: https://github.com/timescale/timescaledb.git
+      dest: /home/pi/timescaledb
+      version: 1.4.0
+
+  - name: Build and install
+    when: timescale_repo.changed
+    become_user: pi
+    shell: |
+        cd /home/pi/timescaledb
+        rm -rf build/ && ./bootstrap
+        cd ./build && make -j2
+        sudo make install
+
+  - name: Initialize postgres user `pi` 
+    become_user: postgres
+    shell: (psql postgres -tAc "SELECT 'exists' FROM pg_roles WHERE rolname='pi'" | grep -q exists) || createuser pi
+    
+  - name: Initialize database `pi`
+    become_user: postgres
+    shell: (psql postgres -tAc "SELECT 'exists' FROM pg_database WHERE datname='pi'" | grep -q exists) || createdb pi --owner=pi
+
+  - name: Copy SQL
+    copy:
+      src: create.sql
+      dest: /home/pi/create.sql
+    register: ddl
+
+  # TODO postgresql.conf
+  #
+  - name: Create `observations` table
+    # when: ddl.changed
+    become_user: postgres
+    shell: psql -f /home/pi/create.sql
+
    # TODO install and enable the photoresistor service
