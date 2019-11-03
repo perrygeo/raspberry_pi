@@ -1,0 +1,41 @@
+- name: Provision software for Raspberry Pi
+  hosts: pi
+  become: true
+  tasks:
+
+  - name: Install official packages
+    apt:
+      name: "{{ packages }}"
+      state: present
+      update_cache: yes
+      cache_valid_time: 3600
+    vars:
+      packages:
+      - aptitude
+      - build-essential
+      - git
+      - htop
+      - postgresql-11
+      - python-dev
+      - python-pip
+      - python-smbus
+      - i2c-tools
+      - python-pil
+
+# Manual steps in https://learn.adafruit.com/adafruits-raspberry-pi-lesson-4-gpio-setup/configuring-i2c
+# sudo raspi-config, Interface, turn on I2c, reboot
+#
+  - name: Pip installs
+    pip:
+      name: "{{ packages }}"
+    vars:
+      packages:
+      - apscheduler
+      - 'pubnub>=4.0.5'
+      - 'git+https://github.com/adafruit/Adafruit_Python_GPIO.git#egg=Adafruit_GPIO'
+
+  - name: Smart Garden code
+    become_user: pi
+    git:
+      repo: https://github.com/switchdoclabs/SDL_Pi_SmartGardenSystem.git
+      dest: /home/pi/SDL_Pi_SmartGardenSystem
